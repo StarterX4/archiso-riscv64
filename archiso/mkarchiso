@@ -491,9 +491,9 @@ _make_boot_on_fat() {
 }
 
 # Copy kernel, initramfs, and dtb to FAT image
-_make_boot_on_fat_aarch64() {
+_make_boot_on_fat_riscv64() {
     local ucode_image all_ucode_images=()
-    _msg_info "Preparing kernel, initramfs, and dtb for the FAT aarch64 file system..."
+    _msg_info "Preparing kernel, initramfs, and dtb for the FAT riscv64 file system..."
     mmd -i "${work_dir}/efiboot.img" \
         "::/${install_dir}" "::/${install_dir}/boot" "::/${install_dir}/boot/${arch}"
     mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/initramfs-"*".img" "::/${install_dir}/boot/${arch}/"
@@ -583,10 +583,10 @@ _make_bootmode_uefi-x64.systemd-boot.esp() {
 }
 
 # Prepare system-boot for booting when written to a disk (isohybrid)
-_make_bootmode_uefi-aarch64.systemd-boot.esp() {
+_make_bootmode_uefi-riscv64.systemd-boot.esp() {
     local _file efiboot_imgsize
     local _available_ucodes=()
-    _msg_info "Setting up systemd-boot for aarch64 UEFI booting..."
+    _msg_info "Setting up systemd-boot for riscv64 UEFI booting..."
 
     for _file in "${ucodes[@]}"; do
         if [[ -e "${pacstrap_dir}/boot/${_file}" ]]; then
@@ -621,9 +621,9 @@ _make_bootmode_uefi-aarch64.systemd-boot.esp() {
 
     # Copy kernel and initramfs to FAT image.
     # systemd-boot can only access files from the EFI system partition it was launched from.
-    _make_boot_on_fat_aarch64
+    _make_boot_on_fat_riscv64
 
-    _msg_info "Done! systemd-boot set up for aarch64 UEFI booting successfully."
+    _msg_info "Done! systemd-boot set up for riscv64 UEFI booting successfully."
 }
 
 # Prepare system-boot for El Torito booting
@@ -661,16 +661,16 @@ _make_bootmode_uefi-x64.systemd-boot.eltorito() {
     _msg_info "Done!"
 }
 
-# Prepare aarch64 system-boot for El Torito booting
-_make_bootmode_uefi-aarch64.systemd-boot.eltorito() {
+# Prepare riscv64 system-boot for El Torito booting
+_make_bootmode_uefi-riscv64.systemd-boot.eltorito() {
     # El Torito UEFI boot requires an image containing the EFI system partition.
-    # uefi-aarch64.systemd-boot.eltorito has the same requirements as uefi-aarch64.systemd-boot.esp
-    _run_once _make_bootmode_uefi-aarch64.systemd-boot.esp
+    # uefi-riscv64.systemd-boot.eltorito has the same requirements as uefi-riscv64.systemd-boot.esp
+    _run_once _make_bootmode_uefi-riscv64.systemd-boot.esp
 
     # Additionally set up system-boot in ISO 9660. This allows creating a medium for the live environment by using
     # manual partitioning and simply copying the ISO 9660 file system contents.
     # This is not related to El Torito booting and no firmware uses these files.
-    _msg_info "Preparing an /EFI directory for the aarch64 ISO 9660 file system..."
+    _msg_info "Preparing an /EFI directory for the riscv64 ISO 9660 file system..."
     install -d -m 0755 -- "${isofs_dir}/EFI/BOOT"
 
     # Copy systemd-boot EFI binary to the default/fallback boot path
@@ -772,7 +772,7 @@ _validate_requirements_bootmode_uefi-x64.systemd-boot.esp() {
     fi
 }
 
-_validate_requirements_bootmode_uefi-aarch64.systemd-boot.esp() {
+_validate_requirements_bootmode_uefi-riscv64.systemd-boot.esp() {
     # Check if mkfs.fat is available
     if ! command -v mkfs.fat &> /dev/null; then
         (( validation_error=validation_error+1 ))
@@ -816,9 +816,9 @@ _validate_requirements_bootmode_uefi-x64.systemd-boot.eltorito() {
     _validate_requirements_bootmode_uefi-x64.systemd-boot.esp
 }
 
-_validate_requirements_bootmode_uefi-aarch64.systemd-boot.eltorito() {
-    # uefi-aarch64.systemd-boot.eltorito has the exact same requirements as uefi-aarch64.systemd-boot.esp
-    _validate_requirements_bootmode_uefi-aarch64.systemd-boot.esp
+_validate_requirements_bootmode_uefi-riscv64.systemd-boot.eltorito() {
+    # uefi-riscv64.systemd-boot.eltorito has the exact same requirements as uefi-riscv64.systemd-boot.esp
+    _validate_requirements_bootmode_uefi-riscv64.systemd-boot.esp
 }
 
 # Build airootfs filesystem image
@@ -984,7 +984,7 @@ _add_xorrisofs_options_uefi-x64.systemd-boot.esp() {
 }
 
 # systemd-boot in an attached EFI system partition
-_add_xorrisofs_options_uefi-aarch64.systemd-boot.esp() {
+_add_xorrisofs_options_uefi-riscv64.systemd-boot.esp() {
     # Move the first partition away from the start of the ISO, otherwise the GPT will not be valid and ISO 9660
     # partition will not be mountable
     # shellcheck disable=SC2076
@@ -1038,9 +1038,9 @@ _add_xorrisofs_options_uefi-x64.systemd-boot.eltorito() {
 }
 
 # systemd-boot via El Torito
-_add_xorrisofs_options_uefi-aarch64.systemd-boot.eltorito() {
+_add_xorrisofs_options_uefi-riscv64.systemd-boot.eltorito() {
     # shellcheck disable=SC2076
-    if [[ " ${bootmodes[*]} " =~ ' uefi-aarch64.systemd-boot.esp ' ]]; then
+    if [[ " ${bootmodes[*]} " =~ ' uefi-riscv64.systemd-boot.esp ' ]]; then
         # systemd-boot in an attached EFI system partition via El Torito
         xorrisofs_options+=(
             # Start a new El Torito boot entry for UEFI

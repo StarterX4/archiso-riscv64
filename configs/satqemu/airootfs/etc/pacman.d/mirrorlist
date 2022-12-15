@@ -1,0 +1,7 @@
+#
+# Arch Linux RISC-V repository mirrorlist
+# Generated on 2022-12-15
+#
+
+## Unfortunately the only repo mirror :(
+Server = https://archriscv.felixc.at/repo/$repo
