@@ -595,11 +595,10 @@ _make_bootmode_uefi-riscv64.systemd-boot.esp() {
     done
     # Calculate the required FAT image size in bytes
     efiboot_imgsize="$(du -bc \
-        "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootaa64.efi" \
+        "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootriscv.efi" \
         "${profile}/efiboot/" \
         "${pacstrap_dir}/boot/Image" \
         "${pacstrap_dir}/boot/initramfs-"*".img" \
-        "${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" \
         "${_available_ucodes[@]}" \
         2>/dev/null | awk 'END { print $1 }')"
     # Create a FAT image for the EFI system partition
@@ -607,7 +606,7 @@ _make_bootmode_uefi-riscv64.systemd-boot.esp() {
 
     # Copy systemd-boot EFI binary to the default/fallback boot path
     mcopy -i "${work_dir}/efiboot.img" \
-        "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootaa64.efi" ::/EFI/BOOT/BOOTAA64.EFI
+        "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootriscv64.efi" ::/EFI/BOOT/BOOTRISCV64.EFI
 
     # Copy systemd-boot configuration files
     mmd -i "${work_dir}/efiboot.img" ::/loader ::/loader/entries
@@ -674,8 +673,8 @@ _make_bootmode_uefi-riscv64.systemd-boot.eltorito() {
     install -d -m 0755 -- "${isofs_dir}/EFI/BOOT"
 
     # Copy systemd-boot EFI binary to the default/fallback boot path
-    install -m 0644 -- "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootaa64.efi" \
-        "${isofs_dir}/EFI/BOOT/BOOTAA64.EFI"
+    install -m 0644 -- "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootriscv64.efi" \
+        "${isofs_dir}/EFI/BOOT/BOOTRISCV64.EFI"
 
     # Copy systemd-boot configuration files
     install -d -m 0755 -- "${isofs_dir}/loader/entries"
