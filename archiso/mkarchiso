@@ -38,7 +38,7 @@ cert_list=()
 sign_netboot_artifacts=""
 declare -A file_permissions=()
 # adapted from GRUB_EARLY_INITRD_LINUX_STOCK in https://git.savannah.gnu.org/cgit/grub.git/tree/util/grub-mkconfig.in
-readonly ucodes=('amd-uc.img' 'amd-ucode.img')
+readonly ucodes=('')
 
 
 # Show an INFO message
@@ -138,7 +138,7 @@ _show_config() {
     _msg_info "Code signing certificates:   ${cert_list[*]}"
     _msg_info "                  Profile:   ${profile}"
     _msg_info "Pacman configuration file:   ${pacman_conf}"
-    _msg_info "          Image file name:   ${image_name:-None}"
+    _msg_info "          vmlinuz-linux file name:   ${image_name:-None}"
     _msg_info "         ISO volume label:   ${iso_label}"
     _msg_info "            ISO publisher:   ${iso_publisher}"
     _msg_info "          ISO application:   ${iso_application}"
@@ -402,8 +402,8 @@ _make_boot_on_iso9660() {
     _msg_info "Preparing kernel, initramfs, and dtb for the ISO 9660 file system..."
     install -d -m 0755 -- "${isofs_dir}/${install_dir}/boot/${arch}"
     install -m 0644 -- "${pacstrap_dir}/boot/initramfs-"*".img" "${isofs_dir}/${install_dir}/boot/${arch}/"
-    install -m 0644 -- "${pacstrap_dir}/boot/Image" "${isofs_dir}/${install_dir}/boot/${arch}/"
-    install -m 0644 -- "${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" "${isofs_dir}/${install_dir}/boot/${arch}/"
+    install -m 0644 -- "${pacstrap_dir}/boot/vmlinuz-linux" "${isofs_dir}/${install_dir}/boot/${arch}/"
+    #install -m 0644 -- "${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" "${isofs_dir}/${install_dir}/boot/${arch}/"
     for ucode_image in "${ucodes[@]}"; do
         if [[ -e "${pacstrap_dir}/boot/${ucode_image}" ]]; then
             install -m 0644 -- "${pacstrap_dir}/boot/${ucode_image}" "${isofs_dir}/${install_dir}/boot/"
@@ -476,9 +476,9 @@ _make_boot_on_fat() {
     _msg_info "Preparing kernel and initramfs for the FAT file system..."
     mmd -i "${work_dir}/efiboot.img" \
         "::/${install_dir}" "::/${install_dir}/boot" "::/${install_dir}/boot/${arch}"
-    mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/Image" \
+    mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/vmlinuz-linux" \
         "${pacstrap_dir}/boot/initramfs-"*".img" \
-        "${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" "::/${install_dir}/boot/${arch}/"
+        #"${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" "::/${install_dir}/boot/${arch}/"
     for ucode_image in "${ucodes[@]}"; do
         if [[ -e "${pacstrap_dir}/boot/${ucode_image}" ]]; then
             all_ucode_images+=("${pacstrap_dir}/boot/${ucode_image}")
@@ -497,8 +497,8 @@ _make_boot_on_fat_riscv64() {
     mmd -i "${work_dir}/efiboot.img" \
         "::/${install_dir}" "::/${install_dir}/boot" "::/${install_dir}/boot/${arch}"
     mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/initramfs-"*".img" "::/${install_dir}/boot/${arch}/"
-    mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/Image" "::/${install_dir}/boot/${arch}/"
-    mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" "::/${install_dir}/boot/${arch}/"
+    mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/vmlinuz-linux" "::/${install_dir}/boot/${arch}/"
+    #mcopy -i "${work_dir}/efiboot.img" "${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" "::/${install_dir}/boot/${arch}/"
     for ucode_image in "${ucodes[@]}"; do
         if [[ -e "${pacstrap_dir}/boot/${ucode_image}" ]]; then
             all_ucode_images+=("${pacstrap_dir}/boot/${ucode_image}")
@@ -547,9 +547,9 @@ _make_bootmode_uefi-x64.systemd-boot.esp() {
         "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootx64.efi" \
         "${pacstrap_dir}/usr/share/edk2-shell/x64/Shell_Full.efi" \
         "${profile}/efiboot/" \
-        "${pacstrap_dir}/boot/Image" \
+        "${pacstrap_dir}/boot/vmlinuz-linux" \
         "${pacstrap_dir}/boot/initramfs-"*".img" \
-        "${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" \
+        #"${pacstrap_dir}/boot/sc8280xp-lenovo-thinkpad-x13s.dtb" \
         "${_available_ucodes[@]}" \
         2>/dev/null | awk 'END { print $1 }')"
     # Create a FAT image for the EFI system partition
@@ -597,11 +597,12 @@ _make_bootmode_uefi-riscv64.systemd-boot.esp() {
     efiboot_imgsize="$(du -bc \
         "${pacstrap_dir}/usr/lib/systemd/boot/efi/systemd-bootriscv.efi" \
         "${profile}/efiboot/" \
-        "${pacstrap_dir}/boot/Image" \
+        "${pacstrap_dir}/boot/vmlinuz-linux" \
         "${pacstrap_dir}/boot/initramfs-"*".img" \
         "${_available_ucodes[@]}" \
         2>/dev/null | awk 'END { print $1 }')"
     # Create a FAT image for the EFI system partition
+    efiboot_imgsize="$[$efiboot_imgsize*3]"
     _make_efibootimg "$efiboot_imgsize"
 
     # Copy systemd-boot EFI binary to the default/fallback boot path
@@ -849,8 +850,8 @@ _sign_netboot_artifacts() {
             _files_to_sign+=("${_dir}${_file}")
         fi
     done
-    # TODO: should Image and Image.gz be added here?
-    for _file in "${_files_to_sign[@]}" "${_dir}${arch}/Image" "${_dir}${arch}/initramfs-"*.img "${_dir}${arch}/sc8280xp-lenovo-thinkpad-x13s.dtb"*; do
+    # TODO: should vmlinuz-linux and vmlinuz-linux.gz be added here?
+    for _file in "${_files_to_sign[@]}" "${_dir}${arch}/vmlinuz-linux" "${_dir}${arch}/initramfs-"*.img; do
         openssl cms \
             -sign \
             -binary \
